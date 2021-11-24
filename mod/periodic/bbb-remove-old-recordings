@@ -47,6 +47,7 @@ for eventsfile in /var/bigbluebutton/recording/raw/*/events.xml ; do
 done
 
 for kurentoFile in /var/kurento/*/*/*.webm ; do
+        [ ! -f $kurentoFile ] && continue
         MTIME=$(stat -c %Y "${kurentoFile}")
         # Check the age of the recording
         if [ $(( ( $NOW - $MTIME ) / 86400 )) -gt $RECORDING_MAX_AGE_DAYS ]; then
@@ -54,6 +55,6 @@ for kurentoFile in /var/kurento/*/*/*.webm ; do
                 MEETING_ID="${MEETING_ID##*/}"
                 DIR_PATH="$(dirname ${kurentoFile})"
                 echo "${MEETING_ID}" >> "${LOGFILE}"
-                rm -rf "$DIR_PATH" >>"${LOGFILE}"
+                rm -rf "$DIR_PATH"
         fi
 done
