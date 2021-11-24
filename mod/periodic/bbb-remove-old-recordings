@@ -50,11 +50,10 @@ for kurentoFile in /var/kurento/*/*/*.webm ; do
         MTIME=$(stat -c %Y "${kurentoFile}")
         # Check the age of the recording
         if [ $(( ( $NOW - $MTIME ) / 86400 )) -gt $RECORDING_MAX_AGE_DAYS ]; then
-                MEETING_ID="${kurentoFile%/.xml}"
+                MEETING_ID="${kurentoFile%/.webm}"
                 MEETING_ID="${MEETING_ID##*/}"
-                DIR_PATH = "$(dirname ${kurentoFile})"
+                DIR_PATH="$(dirname ${kurentoFile})"
                 echo "${MEETING_ID}" >> "${LOGFILE}"
-
-                docker exec "$BBB_KURENTO_CONTAINER_NAME" rm -rf "${DIR_PATH}" >>"${LOGFILE}"
+                rm -rf "$DIR_PATH" >>"${LOGFILE}"
         fi
 done
