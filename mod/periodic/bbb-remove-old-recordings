@@ -11,9 +11,15 @@ echo "$(date --rfc-3339=seconds) Deleting recordings older than ${RECORDING_MAX_
 
 # Find the name of recordings container in order to access `bbb-record` utility
 BBB_RECORDINGS_CONTAINER_NAME=$(docker ps --filter "name=recordings" --filter "status=running" --format "{{.Names}}")
+BBB_KURENTO_CONTAINER_NAME=$(docker ps --filter "name=kurento" --filter "status=running" --format "{{.Names}}")
+
 if [ $BBB_RECORDINGS_CONTAINER_NAME == "" ]; then
   echo "$(date --rfc-3339=seconds) ERROR: recordings container is not running" >>"${LOGFILE}"
   exit 1
+fi
+
+if [ $BBB_KURENTO_CONTAINER_NAME == "" ]; then
+  echo "$(date --rfc-3339=seconds) ERROR: kurento container is not running" >>"${LOGFILE}"
 fi
 
 for donefile in /var/bigbluebutton/recording/status/published/*-presentation.done ; do
@@ -37,5 +43,18 @@ for eventsfile in /var/bigbluebutton/recording/raw/*/events.xml ; do
                 echo "${MEETING_ID}" >> "${LOGFILE}"
 
                 docker exec "$BBB_RECORDINGS_CONTAINER_NAME" bbb-record --delete "${MEETING_ID}" >>"${LOGFILE}"
+        fi
+done
+
+for kurentoFile in /var/kurento/*/*/*.webm ; do
+        [ ! -f $kurentoFile ] && continue
+        MTIME=$(stat -c %Y "${kurentoFile}")
+        # Check the age of the recording
+        if [ $(( ( $NOW - $MTIME ) / 86400 )) -gt $RECORDING_MAX_AGE_DAYS ]; then
+                MEETING_ID="${kurentoFile%/.webm}"
+                MEETING_ID="${MEETING_ID##*/}"
+                DIR_PATH="$(dirname ${kurentoFile})"
+                echo "${MEETING_ID}" >> "${LOGFILE}"
+                rm -rf "$DIR_PATH"
         fi
 done
